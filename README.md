@@ -20,7 +20,7 @@ This concept proposes a **Hybrid Search Architecture** with a custom **Time-Deca
 
 Standard RAG approaches fail in the news domain due to three specific factors. Our architecture addresses these directly:
 
-1. **Temporality**: A query like "Who is the coach of VfL?" has different answers in 2021, 2023, and 2025. Vector similarity alone might retrieve the 2021 article if the semantic match is stronger.
+1. **Temporality**: A query like "Wer ist der VfL Trainer?" has different answers in 2021, 2023, and 2025. Vector similarity alone might retrieve the 2021 article if the semantic match is stronger.
    - **Solution:** Time-Decay Scoring.
 
 2. **Specificity vs. Concept**: Users search for specific entities ("Bawinkel", "Timo Schultz") and broad concepts ("Housing market trends").
