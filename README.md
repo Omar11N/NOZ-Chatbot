@@ -10,7 +10,7 @@
 
 ## 1. Executive Summary
 
-"Frag die NOZ" is not a standard chatbot; it is a **Domain-Specific Retrieval-Augmented Generation (RAG) system**. Unlike generic models (ChatGPT), it must answer based only on the NOZ archive, respecting the temporality of news (news ages quickly) and the regional context (Osnabrück/Emsland).
+"Frag die NOZ" is not a standard chatbot; it is a **Domain-Specific Retrieval-Augmented Generation (RAG) system**. Unlike generic models (ChatGPT), it must answer based only on the NOZ archive, respecting the temporality of news (news ages quickly) and the regional context.
 
 This concept proposes a **Hybrid Search Architecture** with a custom **Time-Decay Ranking Algorithm** to ensure users receive factually accurate and up-to-date answers.
 
