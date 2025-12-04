@@ -162,11 +162,3 @@ Before deploying updates, we run a test set of 50 curated questions against thes
 - **Personalization:** Boosting articles based on the user's reading history (e.g., "More sports news").
 
 ---
-
-## License
-
-[Specify your license here]
-
-## Contact
-
-[Your contact information or team details]
