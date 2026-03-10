@@ -1,164 +1,70 @@
-# NOZ-Chatbot
+# 🧠 Eva: Multi-Agent Cognitive Engine
 
-# Technical Concept: Frag die NOZ
+> The hierarchical AI backend powering intelligent reflections, mood analysis, and proactive personalization for the Midnight Momentum application.
 
-**Role:** AI Engineer / Data Scientist  
-**Date:** December 4, 2025  
-**Scope:** Data Strategy, Retrieval Algorithms, and System Architecture
+## 📖 Overview
 
----
+**Eva** is a standalone, state-of-the-art **Hierarchical Multi-Agent System** built with [LangGraph](https://python.langchain.com/docs/langgraph) and hosted on **Google Cloud Vertex AI**. 
 
-## 1. Executive Summary
+While traditional chatbots simply reply to prompts, Eva is designed as an integrated cognitive co-pilot. She acts as the "brain" for the client application (Midnight Momentum), actively analyzing incoming user states, extracting life aspirations, dynamically managing database records, and autonomously triggering external application events.
 
-"Frag die NOZ" is not a standard chatbot; it is a **Domain-Specific Retrieval-Augmented Generation (RAG) system**. Unlike generic models (ChatGPT), it must answer based only on the NOZ archive, respecting the temporality of news (news ages quickly) and the regional context.
-
-This concept proposes a **Hybrid Search Architecture** with a custom **Time-Decay Ranking Algorithm** to ensure users receive factually accurate and up-to-date answers.
+*Note: This repository outlines Eva's architectural design, multi-agent structure, and tool integration. The client application (Midnight Momentum) is maintained in a separate repository.*
 
 ---
 
-## 2. The Core Challenge: "News is not Static"
+## ⚡ Tech Stack
 
-Standard RAG approaches fail in the news domain due to three specific factors. Our architecture addresses these directly:
+Eva’s architecture leverages a modern, high-performance stack optimized for scalable, complex AI agent workflows:
 
-1. **Temporality**: A query like "Wer ist der VfL Trainer?" has different answers in 2021, 2023, and 2025. Vector similarity alone might retrieve the 2021 article if the semantic match is stronger.
-   - **Solution:** Time-Decay Scoring.
-
-2. **Specificity vs. Concept**: Users search for specific entities ("Bawinkel", "Timo Schultz") and broad concepts ("Housing market trends").
-   - **Solution:** Hybrid Search (Keyword + Vector).
-
-3. **Hallucination Risk**: A newspaper cannot afford to invent facts.
-   - **Solution:** Strict Grounding & Citation Mapping.
+- **Environment & Orchestration:** Google Cloud Vertex AI & LangGraph (Python)
+- **Large Language Models (LLMs):** 
+  - **Gemini 2.5 Pro:** Powers the Leader agent for complex reasoning, state evaluation, and intelligent task routing.
+  - **Gemini 2.5 Flash & Gemini 3 Flash:** Powers specialized sub-agents for lightning-fast, cost-effective tool execution, summarization, and data extraction.
+- **State Management:** Redis (High-speed state connection and LangGraph checkpointer for conversation memory)
+- **Persistent Memory:** PostgreSQL (Relational storage for Moments, Moods, and Future Self Personas)
 
 ---
 
-## 3. Data Strategy & Ingestion Pipeline
+## 🏗️ System Architecture
 
-We are dealing with **~1 Million articles**. Raw text ingestion is insufficient. We need an ETL pipeline that enriches data before indexing.
+Eva is designed using a **Supervisor/Worker Hierarchy**. The Leader acts as the central router, taking in the user's context from the client app and delegating tasks to highly specialized sub-agents. 
 
-### 3.1. Chunking Strategy: Parent-Child Indexing
-
-Splitting articles blindly breaks context. We use a **Parent-Child approach** to decouple searching from reading.
-
-- **Child Chunk (The Search Target)**: Small segments (250–300 tokens).
-  - *Why:* High density of meaning. Better for vector matching.
-
-- **Parent Chunk (The LLM Context)**: The full article (or large window).
-  - *Why:* When a child chunk matches, we retrieve the Parent to give the LLM the full story (e.g., the date, the author, the conclusion).
-
-### 3.2. Metadata Enrichment (The Schema)
-
-We extract structured data during ingestion to enable precise filtering.
-
-**Data Schema (JSON Structure):**
-```json
-{
-  "article_id": "12345",
-  "title": "L67 in Bawinkel: Parents fight for safety",
-  "text_content": "...",
-  "vectors": {
-    "dense": [0.12, -0.45, ...],  // Semantic meaning
-    "sparse": {"bawinkel": 0.8, "l67": 0.9} // Keyword weights (BM25)
-  },
-  "metadata": {
-    "publish_date": "2025-07-15T10:00:00Z",
-    "location": ["Bawinkel", "Emsland"],
-    "category": "Local",
-    "entities": ["Thomas März", "Kita St. Marien"]
-  }
-}
-```
+<!-- Insert Mermaid Diagram Here -->
 
 ---
 
-## 4. Search & Retrieval Architecture
+## 🧠 Core Cognitive Components
 
-This is the "Brain" of the system. We do not rely on a single algorithm.
+To maximize efficiency, lower latency, and maintain clean context windows, Eva avoids relying on a single "mega-prompt." Instead, cognitive load is distributed across specialized agents.
 
-### 4.1. The Hybrid Search Logic
+### 1. The Leader (Supervisor Agent)
+*Powered by Gemini 2.5 Pro.* 
+The orchestrator of the LangGraph state. Whenever a payload is received from the client app (e.g., a chat message or a mood log), the Leader evaluates the intent, parses the Redis graph state, and routes the task to the exact sub-agent required. It then merges the outputs to return a cohesive response to the client.
 
-We use **Reciprocal Rank Fusion (RRF)** to combine two search methods:
+### 2. 💭 Reflection Agent
+*Goal: Prevent surface-level journaling by prompting deep thought.*
+* **Mechanism:** Uses internal tools to analyze incoming text. Instead of a standard conversational reply, it identifies missing context and actively prompts the client application to ask the user clarifying questions, helping them unpack their true feelings and motivations.
 
-1. **Dense Retrieval (Vector)**: Captures intent (e.g., "Traffic safety issues").
-   - **Model:** `text-embedding-3-large` (OpenAI) or `intfloat/multilingual-e5-large` (Open Source).
+### 3. 🔮 Insight & Mood Agent
+*Goal: Track emotional trajectories and map out ultimate goals.*
+* **Mechanism:** Continuously monitors mood arrays and summarizes recent moments. It utilizes specialized data-extraction tools to pull out long-term aspirations, dynamically generating and updating a **"Future Self Persona"** in PostgreSQL. This persona acts as the foundational context for all of Eva's future logic.
 
-2. **Sparse Retrieval (BM25)**: Captures exact keywords (e.g., "L67", "Bawinkel").
+### 4. 📝 Moment Agent
+*Goal: Autonomously manage the user's data structure.*
+* **Mechanism:** Equipped with database CRUD capabilities. If the user mentions a new plan, thought, or burst of motivation in natural language, this agent automatically maps it to the schema and generates a structured "Moment" in PostgreSQL. It can also autonomously fetch and edit existing records based on new conversational context.
 
-### 4.2. The "News Bias" Algorithm (Time Decay)
-
-To solve the "Old News" problem, we apply a mathematical decay function to the score of retrieved documents.
-
-**Logic:**
-```
-Score_final = Score_search × (1 / (1 + λ · (Time_now - Time_published)))
-```
-
-- **Effect:** An article from yesterday with a 90% match beats an article from 3 years ago with a 95% match.
-- **Implementation:** This is implemented as a custom scoring profile in the Vector Database (Weaviate/Qdrant).
-
-### 4.3. Re-Ranking (Precision Layer)
-
-After retrieving the top 50 candidates, we pass them through a **Cross-Encoder** (e.g., `bge-reranker-v2-m3`).
-
-- **Function:** It reads the query and the document pair deeply.
-- **Result:** It discards irrelevant "false positives" that vector search found. We send only the top 5 to the LLM.
+### 5. 🔔 Notification Agent
+*Goal: Deliver highly personalized, context-aware nudges.*
+* **Mechanism:** Bridges the gap between Eva's backend and the client's frontend. It leverages the user's Future Self Persona and recent Moments to draft highly bespoke notification copy. It then calls the `ScheduleNudgeTool` to interface directly with the client app's native notification engine.
 
 ---
 
-## 5. Answer Generation (LLM)
+## 🔄 Bidirectional API Paradigm
 
-### 5.1. Model Selection
+Most AI API integrations are unidirectional (Client asks → AI answers). Eva is designed as a **bidirectional engine**:
 
-- **Primary Choice:** GPT-4o (via Azure OpenAI).
-  - **Reasoning:** Best instruction following for German language and complex citation formatting. Azure ensures GDPR compliance (servers in Europe).
-
-- **Alternative (Cost/Privacy):** Llama 3 (70B) self-hosted.
-  - **Trade-off:** Higher maintenance effort, but data never leaves NOZ infrastructure.
-
-### 5.2. System Prompting & Citations
-
-The prompt is engineered to force **Evidence-Based Answers**.
-
-**System Prompt:**
-
-> "You are an assistant for the Neue Osnabrücker Zeitung. Answer the user's question using only the provided context.
-> 
-> - If the answer is not in the context, state 'I do not know'.
-> - Cite every claim with the index of the source article, e.g., [1].
-> - Prioritize the most recent articles in your synthesis."
+1. **Client ➡️ Eva**: The client app feeds UI interactions, explicit mood tracking, and chat history into Eva's LangGraph state (managed securely in Redis).
+2. **Eva ➡️ Client**: Eva acts *on* the client. Through secure tool calling via Vertex AI, she autonomously manages PostgreSQL database entries (Moments) and actively triggers features on the client's operating system (Push Notifications). 
 
 ---
-
-## 6. Evaluation & Monitoring
-
-How do we measure success?
-
-### 6.1. Offline Evaluation (RAGAS Framework)
-
-Before deploying updates, we run a test set of 50 curated questions against these metrics:
-
-- **Faithfulness:** Is the answer derived only from the context?
-- **Context Precision:** Did the search engine find the relevant article?
-
-### 6.2. Online Monitoring
-
-- **"No Answer" Rate:** If this spikes, our retrieval is failing (or we lack content).
-- **User Feedback:** Thumbs up/down on specific answers.
-
----
-
-## 7. Architectural Decisions & Trade-offs
-
-| Decision        | Choice           | Alternative    | Rationale                                                                                   |
-|-----------------|------------------|----------------|---------------------------------------------------------------------------------------------|
-| Database        | Weaviate         | Pinecone       | Weaviate supports hybrid search and custom scoring (Time Decay) natively.                   |
-| Search          | Hybrid           | Pure Vector    | Pure vector search fails on specific local names (e.g., small village names).               |
-| Infrastructure  | Cloud (Azure)    | On-Premise     | Speed to MVP. We can move to On-Premise later for cost optimization.                        |
-
----
-
-## 8. Future Outlook
-
-- **Multimodal Search:** Using CLIP embeddings to allow users to search for images (e.g., "Show me photos of the stadium construction").
-- **Personalization:** Boosting articles based on the user's reading history (e.g., "More sports news").
-
----
+*Disclaimer: This repository serves as a structural and architectural showcase. Proprietary agent prompts, internal schema logic, and specific LangGraph implementation scripts are kept private to protect core intellectual property.*
